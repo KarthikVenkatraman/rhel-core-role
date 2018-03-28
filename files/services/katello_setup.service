@@ -1,0 +1,11 @@
+[Unit]
+Description=Setup the katello agent and Katello repos
+After=setup_environment.service
+ConditionFileIsExecutable=/usr/local/sbin/katello_setup
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/ruby /usr/local/sbin/katello_setup
+
+[Install]
+WantedBy=multi-user.target

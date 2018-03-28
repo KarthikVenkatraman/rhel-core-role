@@ -1,0 +1,15 @@
+---
+
+- name: remove iptables
+  systemd: enabled=no masked=yes name=iptables
+
+- name: install firewalld
+  yum: name=firewalld state=present
+
+- name: enable firewalld
+  systemd: enabled=yes masked=no name=firewalld
+
+- name: start firewalld
+  systemd: state=started name=firewalld daemon_reload=yes
+  
+...

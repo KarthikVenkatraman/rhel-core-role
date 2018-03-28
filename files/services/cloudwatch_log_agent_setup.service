@@ -1,0 +1,11 @@
+[Unit]
+Description=Setup environment variables from userdata
+After=cloud-init.service
+ConditionFileIsExecutable=/usr/local/sbin/cloudwatch_log_agent_setup
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/cloudwatch_log_agent_setup
+
+[Install]
+WantedBy=multi-user.target

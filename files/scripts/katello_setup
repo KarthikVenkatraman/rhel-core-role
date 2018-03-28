@@ -1,0 +1,31 @@
+#!/usr/bin/env ruby
+
+require 'yaml'
+require 'net/http'
+
+katello_url = []
+
+# Load the userdata
+begin
+  uri = URI('http://169.254.169.254/latest/user-data')
+  response = Net::HTTP.get_response(uri)
+  userdata = YAML::load(response.body)
+  katello_url  = userdata['katello_url']  || []
+rescue
+  puts 'Failed to load userdata'
+end
+
+# Setup Katello agent
+if !katello_url.empty?
+ # Install Katello rpm
+`yum -y install http://#{katello_url[0]}/pub/katello-ca-consumer-latest.noarch.rpm`
+ # Subscribe to Katello
+`subscription-manager register --org='Aviva' --activationkey='general'`
+ # Start Goferd service
+`systemctl enable goferd`
+`systemctl restart goferd`
+
+ # Disabling EPEL and RHUI repos
+`yum-config-manager --disable epel\*`
+`yum-config-manager --disable rhui\*`
+end

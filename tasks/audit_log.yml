@@ -1,0 +1,4 @@
+---
+
+- name: Set log rotation for audit log
+  command: sed -i "s/keep_logs/rotate/" /etc/audit/auditd.conf

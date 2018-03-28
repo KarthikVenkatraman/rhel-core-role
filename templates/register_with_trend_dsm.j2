@@ -1,0 +1,28 @@
+#!/usr/bin/env ruby
+
+require 'yaml'
+require 'net/http'
+
+userdata = load_userdata
+
+server_url = userdata['trend']['server']    || '{{rhel_core_trend_server}}'
+policy_id  = userdata['trend']['policy_id'] || '{{rhel_core_trend_policy}}'
+
+configure_trend_agent(server_url, policy_id)
+
+BEGIN {
+  def load_userdata
+    begin
+      uri = URI('http://169.254.169.254/latest/user-data')
+      response = Net::HTTP.get_response(uri)
+      YAML::load(response.body)
+    rescue
+      raise 'Failed to load userdata'
+    end
+  end
+  
+  def configure_trend_agent(server_url, policy_id)
+    `/opt/ds_agent/dsa_control -r`
+    `/opt/ds_agent/dsa_control -a dsm://#{server_url}:443/ "policyid:#{policy_id}"`
+  end
+}

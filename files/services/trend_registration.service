@@ -1,0 +1,11 @@
+[Unit]
+Description=Register the Trend DS Agent with the DSM
+After=setup_environment.service
+ConditionFileIsExecutable=/usr/local/sbin/register_with_trend_dsm
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/register_with_trend_dsm
+
+[Install]
+WantedBy=multi-user.target

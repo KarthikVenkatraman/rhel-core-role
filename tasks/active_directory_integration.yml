@@ -1,0 +1,61 @@
+---
+
+- name:  install required packages
+  yum: name="{{ item }}" state=latest
+  with_items:
+    - sssd 
+    - sssd-ldap 
+    - oddjob 
+    - oddjob-mkhomedir
+    
+- name: run authconfig
+  command: >
+    authconfig
+    --enablesssd
+    --enablesssdauth
+    --enablelocauthorize
+    --enablemkhomedir
+    --update
+    
+- name: create sssd configuration
+  template:
+    src: ../templates/sssd.conf.j2 
+    dest: /etc/sssd/sssd.conf
+    owner: root
+    group: root
+    mode: 0600
+  notify: restart sssd
+  
+- name: change ssh AllowUsers to AllowGroups
+  lineinfile: 
+    dest: /etc/ssh/sshd_config 
+    regexp: ^Allow.* ec2-user
+    line: AllowGroups ec2-user
+  notify: restart sshd
+
+- name: create sudoers file
+  file: 
+    path: /etc/sudoers.d/91-aviva-sudoers 
+    owner: root 
+    group: root 
+    mode: 0600 
+    state: touch
+    
+- name: add update access groups script
+  copy: 
+    src: ../files/scripts/update_access_groups
+    dest: /usr/local/sbin/update_access_groups 
+    owner: root 
+    group: root 
+    mode: 0500 
+    
+- name: add the update access groups service file
+  copy: 
+    src: ../files/services/update_access_groups.service
+    dest: /etc/systemd/system/update_access_groups.service
+    owner: root
+    group: root
+    mode: 0644
+    
+- name: enable update access groups service
+  command: systemctl enable update_access_groups.service

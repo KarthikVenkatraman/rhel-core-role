@@ -1,0 +1,28 @@
+---
+
+- name: enable yum repos
+  command: "yum-config-manager --enable {{ item }}"
+  with_items:
+   - rhui-REGION-rhel-server-optional
+   - rhui-REGION-rhel-server-extras
+
+- name: enable epel
+  yum: name="{{ rhel_core_epel_rpm }}" state=present
+
+- name:  install core packages
+  yum: name="{{ item }}" state=latest
+  with_items:
+    - wget
+    - unzip
+    - git
+    - bind-utils
+    - bash-completion
+    - lvm2
+    - python-pip
+    - ruby
+
+- name:  install python packages
+  pip: name="{{ item }}" umask=0122 state=forcereinstall
+  with_items:
+    - awscli
+    - boto

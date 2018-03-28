@@ -1,0 +1,14 @@
+#!/bin/sh
+#
+# /etc/init.d/configure_splunk_identity
+# init script for splunk identity configuration
+#
+# chkconfig: 2345 55 55
+# description: Splunk identity configuration
+#
+
+HOSTNAME=$(curl http://169.254.169.254/latest/meta-data/hostname)
+
+echo $(date) Setting hostname $HOSTNAME >> /var/log/configure_splunk_identity
+sed -i "s/host = .*/host = $HOSTNAME/" /opt/splunkforwarder/etc/system/local/inputs.conf
+sed -i "/serverName = .*/d" /opt/splunkforwarder/etc/system/local/server.conf

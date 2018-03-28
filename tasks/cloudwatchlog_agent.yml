@@ -1,0 +1,51 @@
+---
+
+- name: Configure /tmp/awslogs.conf
+  copy:
+    src: files/config/awslogs.conf
+    dest: /tmp/awslogs.conf
+    owner: root
+    group: root
+    mode: 0600
+
+- name: Download the awslogs-agent-setup.py script
+  get_url:
+    dest: /tmp/awslogs-agent-setup.py
+    group: root
+    owner: root
+    mode: 0600
+    url: "{{ rhel_core_cloudwatchlog_agent_url }}"
+
+- name: Install the AWS CloudWatch Logs daemon
+  shell: python /tmp/awslogs-agent-setup.py -n -r eu-west-1 -c /tmp/awslogs.conf
+
+- name: get cloudwatch_log_agent_setup script
+  copy:
+    src: "../files/scripts/cloudwatch_log_agent_setup"
+    dest: "/usr/local/sbin/cloudwatch_log_agent_setup"
+    owner: root
+    group: root
+    mode: 0700
+
+- name: create service files
+  copy:
+    src: "../files/services/{{ item }}.service"
+    dest: "/etc/systemd/system/{{ item }}.service"
+    owner: root
+    group: root
+    mode: 0644
+  with_items:
+    - cloudwatch_log_agent_setup
+
+- name: enable services
+  command: "systemctl enable {{ item }}.service"
+  with_items:
+    - cloudwatch_log_agent_setup
+
+- name: Copy awslog template file
+  copy:
+    src: files/config/awslogs.conf
+    dest: /var/awslogs/etc/awslogs_conf_template
+    owner: root
+    group: root
+    mode: 0600

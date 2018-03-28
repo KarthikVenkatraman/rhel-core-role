@@ -1,0 +1,8 @@
+---
+
+- name: Logging HEARTBEAT
+  cron:
+    name: "Logging HEARTBEAT"
+    minute: "0"
+    job: "logger HEARTBEAT"
+    state: present

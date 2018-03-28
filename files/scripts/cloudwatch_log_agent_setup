@@ -1,0 +1,80 @@
+#!/usr/bin/ruby
+
+require 'yaml'
+require 'json'
+require 'net/http'
+
+proxy = []
+cwlogs = []
+platformtest = ["445906556292","930830869239","341829059165","573818718762"]
+nonprod = ["906261169288","300820918606","245201642721","581512719627","626547582754","535360541549","601784873414","800351567056","717806519097"]
+prod = ["281077040066","719848509458","214212968968","605527536498","119875672150","459832423804","884627416134"]
+
+begin
+  uri = URI('http://169.254.169.254/latest/user-data')
+  response = Net::HTTP.get_response(uri)
+  userdata = YAML::load(response.body)
+  cwlogs = userdata['cloudwatch_additional_files'] || []
+rescue
+  puts 'Failed to load userdata'
+end
+
+begin
+  uri_id = URI('http://169.254.169.254/latest/dynamic/instance-identity/document')
+  response_id = Net::HTTP.get_response(uri_id)
+  instance_id = JSON.parse(response_id.body)
+  account = instance_id['accountId']
+rescue
+  puts 'Failed to load instance-identity document'
+end
+
+CWLOG_FILE = '/var/awslogs/etc/awslogs.conf'
+CONFIG_TEMPLATE = '/var/awslogs/etc/awslogs_conf_template'
+ADD_LOGS = File.read("/var/awslogs/etc/awslogs_conf_template")
+
+begin
+  if File.exist? ("#{CONFIG_TEMPLATE}")
+    if cwlogs
+      cwlogs.each do |log|
+        ADD_LOGS += "\n[#{log}]
+datetime_format = %b %d %H:%M:%S
+file = #{log}
+buffer_duration = 5000
+log_stream_name = {instance_id}
+initial_position = start_of_file
+log_group_name = #{log}\n"
+      end
+    else
+      puts "No Additional Cloudwatch log"
+    end
+  end
+end
+
+File.open(CWLOG_FILE, 'w') do |file|
+  file.write ADD_LOGS
+end
+
+def set_proxy (management_proxy)
+  `sed -i "s|HTTP_PROXY.*|HTTP_PROXY=#{management_proxy}|" /var/awslogs/etc/proxy.conf`
+  `sed -i "s|HTTPS_PROXY.*|HTTPS_PROXY=#{management_proxy}|" /var/awslogs/etc/proxy.conf`
+  `sed -i "s|NO_PROXY.*|NO_PROXY=169.254.169.254|" /var/awslogs/etc/proxy.conf`
+  `service awslogs restart`
+end
+
+begin
+ if proxy
+   if File.exist? ("/var/awslogs/etc/proxy.conf")
+     if platformtest.include? account
+        set_proxy ("http://management-proxy.management.aws-euw1-pt.avivacloud.com:80")
+     elsif nonprod.include? account
+        set_proxy ("http://management-proxy.management.aws-euw1-np.avivacloud.com:80")
+     elsif prod.include? account
+        set_proxy ("http://management-proxy.management.aws-euw1.avivacloud.com:80")
+     else
+        set_proxy ("#{userdata['environment']['management_proxy']}")
+     end
+   end
+ end
+rescue Exception => e
+  puts "proxy.conf is not available"
+end

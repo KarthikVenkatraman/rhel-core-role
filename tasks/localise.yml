@@ -1,0 +1,13 @@
+---
+
+- name: set timezone
+  command: timedatectl set-timezone Europe/London
+  
+- name: set locale
+  command: localectl set-locale LANG=en_GB.utf8
+  
+- name: set keymap
+  command: localectl set-keymap gb
+  
+- name: set keymap x11
+  command: localectl set-x11-keymap gb

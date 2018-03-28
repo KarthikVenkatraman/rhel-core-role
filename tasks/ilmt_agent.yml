@@ -1,0 +1,19 @@
+---
+
+- name: install ilmt agent
+  yum: name="{{ rhel_core_ilmt_agent_url }}" state=present
+
+- name: create masthead folder
+  file: path=/etc/opt/BESClient state=directory mode=0755
+
+- name: download masthead
+  get_url:
+    url: "{{ rhel_core_ilmt_masthead_url }}"
+    dest: /etc/opt/BESClient/actionsite.afxm
+    owner: root
+    group: root
+    validate_certs: no
+    force: yes
+
+- name: enable client to start on boot
+  command: /sbin/chkconfig besclient on

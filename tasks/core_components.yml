@@ -1,0 +1,33 @@
+---
+
+- name: get environment configuration gem
+  get_url:
+    url: "{{ rhel_core_environment_configurator_gem_url }}"
+    dest: /tmp/environment_configurator.gem
+    owner: root
+    group: root
+  
+- name: install required gems
+  command: "gem install {{ item }} --no-ri --no-rdoc"
+  with_items:
+    - /tmp/environment_configurator.gem
+    
+- name: remove installed gem files
+  file: path="{{ item }}" state=absent
+  with_items:
+    - /tmp/environment_configurator.gem
+    
+- name: create service files
+  copy:
+    src: "../files/services/{{ item }}.service"
+    dest: "/etc/systemd/system/{{ item }}.service"
+    owner: root
+    group: root
+    mode: 0644
+  with_items:
+    - setup_environment
+    
+- name: enable services
+  command: "systemctl enable {{ item }}.service"
+  with_items:
+    - setup_environment

@@ -1,0 +1,11 @@
+[Unit]
+Description=Setup environment variables from userdata
+After=cloud-init.service
+ConditionFileIsExecutable=/usr/local/bin/setup_environment
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/setup_environment
+
+[Install]
+WantedBy=multi-user.target

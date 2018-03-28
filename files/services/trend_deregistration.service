@@ -1,0 +1,10 @@
+[Unit]
+Description=Deregister the Trend DS Agent with the DSM
+
+[Service]
+Type=oneshot
+ExecStop=/opt/ds_agent/dsa_control -r
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,50 @@
+#!/usr/bin/env ruby
+
+require 'yaml'
+require 'net/http'
+
+SSHD_CONF_FILE = '/etc/ssh/sshd_config'
+SUDOERS_FILE   = '/etc/sudoers.d/91-aviva-sudoers'
+
+ssh_groups  = []
+sudo_groups = []
+
+# Load the userdata
+
+begin
+  uri = URI('http://169.254.169.254/latest/user-data')
+  response = Net::HTTP.get_response(uri)
+  userdata = YAML::load(response.body)
+  
+  ssh_groups  = userdata['ssh_groups']  || []
+  sudo_groups = userdata['sudo_groups'] || []
+rescue
+  puts 'Failed to load userdata'
+end
+
+# Set Password Authentication to true
+
+`sed -i "s/PasswordAuthentication.*/PasswordAuthentication yes/" #{SSHD_CONF_FILE}`
+
+# Update the sshd configuration, ec2-user and nexpose groups fixed access.
+
+ssh_groups_line  = "AllowGroups ec2-user rol_cloud_nexpose rol_ops_ec2_admin"
+
+if ssh_groups
+  ssh_groups_line = "#{ssh_groups_line} #{ssh_groups.join(' ')}"
+end
+
+`sed -i "s/AllowGroups ec2-user.*/#{ssh_groups_line}/" #{SSHD_CONF_FILE}`
+`chown root:root #{SSHD_CONF_FILE} && chmod og-rwx #{SSHD_CONF_FILE}`
+
+# Update the sudoers configuration, nexpose groups fixed access.
+
+sudo_groups_lines = "%rol_cloud_nexpose ALL=(ALL) NOPASSWD:ALL\n%rol_ops_ec2_admin ALL=(ALL) NOPASSWD:ALL\n"
+
+sudo_groups.each do |group|
+  sudo_groups_lines = sudo_groups_lines + "%#{group} ALL=(ALL) NOPASSWD:ALL\n"
+end
+
+File.open(SUDOERS_FILE, 'w') do |file|
+  file.write sudo_groups_lines
+end

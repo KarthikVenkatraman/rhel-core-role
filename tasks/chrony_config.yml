@@ -1,0 +1,7 @@
+---
+
+- name: remove public ntp servers from config
+  command: sed -e '/server .*\.rhel\.pool\.ntp\.org iburst/ s/^#*/#/' -i /etc/chrony.conf
+
+- name: restart chronyd
+  command: systemctl restart chronyd

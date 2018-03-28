@@ -1,0 +1,16 @@
+---
+   
+- name: create root .aws directory
+  file: path=/root/.aws state=directory mode=0755
+   
+- name: create root aws config
+  copy: src=files/config/aws_config dest=/root/.aws/config mode=0600
+ 
+- name: create ec2-user .aws directory
+  file: path=/home/ec2-user/.aws state=directory mode=0755 owner=ec2-user group=ec2-user
+    
+- name: create ec2-user aws config
+  copy: src=files/config/aws_config dest=/home/ec2-user/.aws/config mode=0600 owner=ec2-user group=ec2-user
+
+- name: set aws executable permissions
+  file: path=/usr/bin/aws mode=0755

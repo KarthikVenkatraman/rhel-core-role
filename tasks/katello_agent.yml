@@ -1,0 +1,44 @@
+---
+
+- name: Setup katello agent repo
+  yum:
+    name: "{{ rhel_core_katello_rpm }}"
+    state: present
+
+- name: Install katello agent
+  yum:
+    name: katello-agent
+    state: present
+
+- name: get katello setup script
+  copy:
+    src: "../files/scripts/katello_setup"
+    dest: "/usr/local/sbin/katello_setup"
+    owner: root
+    group: root
+    mode: 0700
+
+- name: create service files
+  copy:
+    src: "../files/services/{{ item }}.service"
+    dest: "/etc/systemd/system/{{ item }}.service"
+    owner: root
+    group: root
+    mode: 0644
+  with_items:
+    - katello_setup
+
+- name: enable services
+  command: "systemctl enable {{ item }}.service"
+  with_items:
+    - katello_setup
+
+- name: Disable Goferd service
+  service:
+    name: goferd
+    enabled: no
+
+- name: Remove katello-client repo
+  yum:
+    name: katello-client-repos*
+    state: absent

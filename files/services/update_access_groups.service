@@ -1,0 +1,12 @@
+[Unit]
+Description=Setup Aviva groups for ssh and sudo access
+After=cloud-init.service
+Before=sshd.service
+ConditionFileIsExecutable=/usr/local/sbin/update_access_groups
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/update_access_groups
+
+[Install]
+WantedBy=multi-user.target sshd.service

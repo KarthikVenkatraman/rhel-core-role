@@ -1,0 +1,77 @@
+---
+
+- name: install splunk forwarder
+  yum: name="{{ rhel_core_splunkforwarder_url }}" state=present
+
+- name: retrieve splunk configuration
+  get_url:
+    url: "{{ rhel_core_splunk_configuration_url }}"
+    dest: /tmp/splunk_configuration.zip
+    mode: 0777
+    force: yes
+
+- name: install splunk configuration
+  unarchive:
+    src: /tmp/splunk_configuration.zip
+    dest: /opt/splunkforwarder/etc/apps
+    remote_src: yes
+    owner: root
+    group: root
+    mode: 0770
+
+- name: cleanup zip file
+  file:
+    path: /tmp/splunk_configuration.zip
+    state: absent
+
+# Create log group to allow splunk to read log files.
+- name: create log group
+  group: name=log state=present
+
+- name: add log group to root user
+  user: name=root groups=log append=yes state=present
+
+- name: add log group to splunk user
+  user: name=splunk groups=log append=yes state=present
+
+# CIS Benchmark 4.2.1.3 - Ensure rsyslog default file permissions configured
+- name: set rsyslog.conf $FileCreateMode to 0640
+  lineinfile:
+    dest: /etc/rsyslog.conf
+    line: "$FileCreateMode 0640"
+    regexp: "^$FileCreateMode"
+
+- name: set rsyslog.conf $FileGroup to splunk
+  lineinfile:
+    dest: /etc/rsyslog.conf
+    line: "$FileGroup splunk"
+    regexp: "^$FileGroup"
+
+# CIS Benchmark 4.2.4 - Ensure permissions on all logfiles are configured
+- name: set log file permissions
+  file:
+    path: /var/log
+    state: directory
+    recurse: yes
+    group: log
+    mode: 0640
+
+- name: start splunk and accept licence
+  command: "/opt/splunkforwarder/bin/splunk start --accept-license --answer-yes --no-prompt"
+
+- name: install splunk as a service
+  command: "/opt/splunkforwarder/bin/splunk enable boot-start"
+  
+# Create service to remove hostname from config on restart
+- name: install registration script
+  copy: 
+    src: ../files/scripts/configure_splunk_identity
+    dest: /etc/rc.d/init.d/configure_splunk_identity
+    owner: root
+    group: root
+    mode: 0744
+    
+- name: create service to update splunk hostname before service starts
+  command: chkconfig --add configure_splunk_identity
+  
+...

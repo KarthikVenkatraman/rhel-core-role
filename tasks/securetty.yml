@@ -1,0 +1,12 @@
+---
+
+- name: disable Anonymous root login
+  copy:
+    src: "../files/config/securetty"
+    dest: "/etc/securetty"
+    owner: root
+    group: root
+    mode: 0600
+
+  
+

@@ -1,0 +1,50 @@
+[domain/avivagroup]
+
+ldap_referrals = false
+cache_credentials = true
+enumerate = false
+
+id_provider = ldap
+
+ldap_uri = ldaps://ukncdavia001.avivagroup.com:636,ldaps://ukncdavia002.avivagroup.com:636,ldaps://uknwdavia001.avivagroup.com:636,ldaps://uknwdavia002.avivagroup.com:636,ldaps://uknwdavia003.avivagroup.com:636
+ldap_tls_reqcert = allow
+ldap_default_bind_dn = cn={{ rhel_core_ldap_bind_user }},ou=Service Accounts,ou=United Kingdom,dc=avivagroup,dc=com
+ldap_default_authtok = {{ rhel_core_ldap_bind_passwd }}
+use_fully_qualified_names = false
+case_sensitive=false
+
+ldap_id_mapping = true
+ldap_schema = ad
+ldap_idmap_range_size = 50000000
+
+ldap_user_search_base = dc=avivagroup,dc=com
+ldap_user_object_class = user
+ldap_user_uid_number = objectSid
+ldap_user_gid_number = objectSid
+override_homedir=/home/%u
+override_shell=/bin/bash
+
+ldap_group_search_base = dc=avivagroup,dc=com
+ldap_group_object_class = group
+ignore_group_members = true
+
+[sssd]
+services = nss, pam
+config_file_version = 2
+
+domains = avivagroup
+
+[nss]
+homedir_substring = /home
+
+[pam]
+
+[sudo]
+
+[autofs]
+
+[ssh]
+
+[pac]
+
+[ifp]

@@ -1,0 +1,64 @@
+---
+
+- name: install required packages
+  yum: "name={{ item }} state=latest"
+  with_items:
+    - perl-Switch
+    - perl-DateTime
+    - perl-Sys-Syslog
+    - perl-LWP-Protocol-https
+    - perl-Digest-SHA
+    - zip
+    - unzip
+
+- name: retrieve cloudwatch scripts
+  command: wget {{ rhel_core_cloudwatch_scripts_url }} -O /tmp/cloudwatch_scripts.zip
+
+- name: update file permissions
+  command: chmod 0777 /tmp/cloudwatch_scripts.zip
+
+- name: install cloudwatch scripts
+  unarchive:
+    src: /tmp/cloudwatch_scripts.zip
+    dest: /usr/local/lib
+    remote_src: yes
+    owner: root
+    group: root
+    mode: 1755
+
+- name: set permissions of cloudwatch scripts
+  file:
+    path: /usr/local/lib/aws-scripts-mon/
+    state: directory
+    mode: "go-ws"
+    recurse: yes
+
+- name: add proxy support to AWS scripts
+  lineinfile:
+    dest: /usr/local/lib/aws-scripts-mon/CloudWatchClient.pm
+    line: "  $user_agent->proxy(['http','https'], $ENV{'management_proxy'});"
+    insertafter: ^  \$user_agent->timeout\(\$http_request_timeout\);
+    state: present
+
+- name: clean up zip file
+  file:
+    path: /tmp/cloudwatch_scripts.zip
+    state: absent
+
+- name: setup cron job to report metrics
+  cron:
+    name: "cloudwatch memory and disk metrics"
+    hour: "*"
+    minute: "*/5"
+    job: "/usr/local/lib/aws-scripts-mon/mon-put-instance-data.pl --mem-util --swap-util --disk-path=/ --disk-space-util --auto-scaling --from-cron"
+
+- name: create service to remove instance id and other junk on restart
+  copy:
+    src: ../files/services/cloudwatch_scripts_cleanup.service
+    dest: /etc/systemd/system/cloudwatch_scripts_cleanup.service
+    owner: root
+    group: root
+    mode: 0644
+
+- name: enable cleanup service
+  command: systemctl enable cloudwatch_scripts_cleanup.service

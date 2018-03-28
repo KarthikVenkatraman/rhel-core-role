@@ -1,0 +1,275 @@
+---
+
+# CIS Benchmark 1.1.1.* Disable unused filesystems, 3.5.* Disable uncommon network protocols
+- name: install CIS modprobe configuration
+  copy:
+    src: files/config/cis_modprobe.conf
+    dest: /etc/modprobe.d/cis_modprobe.conf
+
+# CIS Benchmark 1.4.1. Note, did not implement 1.4.2 and 1.4.3 as not relevant to cloud instances.
+- name: make grub.cfg not world readable.
+  file: path="{{ item }}" mode="go-rwx"
+  with_items:
+    - /boot/grub2/grub.cfg
+    - /boot/grub/grub.conf
+
+# CIS Benchmark 3.3.1
+- name: ensure IPv6 router advertisments are not accepted (all)
+  sysctl:
+    name: net.ipv6.conf.all.accept_ra
+    value: 0
+    state: present
+
+- name: ensure IPv6 router advertisments are not accepted (default)
+  sysctl:
+    name: net.ipv6.conf.default.accept_ra
+    value: 0
+    state: present
+
+# CIS Benchmark 3.3.2
+- name: ensure IPv6 redirects are not accepted (all)
+  sysctl:
+    name: net.ipv6.conf.all.accept_redirects
+    value: 0
+    state: present
+
+- name: ensure IPv6 redirects are not accepted (default)
+  sysctl:
+    name: net.ipv6.conf.default.accept_redirects
+    value: 0
+    state: present
+
+# CIS Benchmark 4.1.1.2 - Ensure system is disabled when audit logs are full
+- name: auditd space_left_action = email
+  lineinfile:
+    dest: /etc/audit/auditd.conf
+    line: "space_left_action = email"
+    regexp: "space_left_action"
+
+- name: auditd action_mail_acct = root
+  lineinfile:
+    dest: /etc/audit/auditd.conf
+    line: "action_mail_acct = root"
+    regexp: "action_mail_acct"
+
+- name: auditd admin_space_left_action = halt
+  lineinfile:
+    dest: /etc/audit/auditd.conf
+    line: "admin_space_left_action = halt"
+    regexp: "admin_space_left_action"
+
+# CIS Benchmark 4.1.1.3 - Ensure audit logs are not automatically deleted
+- name: auditd max_log_file_action = keep_logs
+  lineinfile:
+    dest: /etc/audit/auditd.conf
+    line: "max_log_file_action = keep_logs"
+    regexp: "max_log_file_action"
+
+# CIS Benchmark 4.1.3 - Ensure auditing for processes that start prior to auditd is enabled
+- name: grub GRUB_CMDLINE_LINUX="audit=1"
+  lineinfile:
+    dest: /etc/default/grub
+    line: "GRUB_CMDLINE_LINUX=\"crashkernel=auto console=ttyS0,115200n8 console=tty0 net.ifnames=0 audit=1\""
+    regexp: "^GRUB_CMDLINE_LINUX"
+
+- name: reload grub config
+  shell: "grub2-mkconfig > /boot/grub2/grub.cfg"
+
+# CIS Benchmark 4.1.4
+- name: install CIS modprobe configuration
+  copy:
+    src: files/config/cis_audit.rules
+    dest: /etc/audit/rules.d/cis_audit.rules
+
+- name: audit priviledged commands
+  script: scripts/enable_setuid_audit.sh
+
+- name: restart auditd
+  command: service auditd restart
+
+# CIS Benchmark 5.1.* Cron
+- name: cron configuration remove group/world rwx
+  file: path="{{ item }}" mode="g-rwx,o-rwx"
+  with_items:
+    - /etc/cron.hourly
+    - /etc/cron.daily
+    - /etc/cron.weekly
+    - /etc/cron.monthly
+    - /etc/cron.d
+
+- name: remove cron.deny
+  file: path=/etc/cron.deny state=absent
+
+# CIS Benchmark 5.2.* SSHD
+- name: sshd_config remove g/o read
+  file: path=/etc/ssh/sshd_config mode="og-rwx" state=file
+
+- name: disable weak MACs
+  lineinfile:
+    dest: /etc/ssh/sshd_config
+    line: "MACs hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com,umac-128-etm@openssh.com,hmac-sha2-512,hmac-sha2-256,umac-128@openssh.com"
+    regexp: "^MACs"
+  notify: restart sshd
+
+- name: set SSH login grace period to 60 seconds
+  lineinfile:
+    dest: /etc/ssh/sshd_config
+    line: "LoginGraceTime 60"
+    regexp: "^LoginGraceTime"
+
+# CIS Benchmark 5.3.2 - Ensure lockout for failed password attempts is configured
+- name: PAM password lockout - auth required pam_faillock.so preauth audit silent deny=5 unlock_time=900
+  lineinfile:
+    dest: "{{ item }}"
+    line: auth        required      pam_faillock.so preauth audit silent deny=5 unlock_time=900
+    regexp: auth.*pam_faillock.so preauth
+    insertafter: ^auth.*required.*pam_env\.so
+    state: present
+  with_items:
+    - /etc/pam.d/password-auth
+    - /etc/pam.d/system-auth
+
+- name: PAM password lockout - auth default=die pam_faillock.so authfail audit deny=5 unlock_time=900
+  lineinfile:
+    dest: "{{ item }}"
+    line: auth        [default=die] pam_faillock.so authfail audit deny=5 unlock_time=900
+    regexp: auth.*pam_faillock.so authfail
+    insertbefore: auth.*required.*pam_deny.so
+    state: present
+  with_items:
+    - /etc/pam.d/password-auth
+    - /etc/pam.d/system-auth
+
+- name: PAM password lockout - auth sufficient pam_faillock.so authsucc audit deny=5 unlock_time=900
+  lineinfile:
+    dest: "{{ item }}"
+    line: "auth        sufficient    pam_faillock.so authsucc audit deny=5 unlock_time=900"
+    regexp: auth.*pam_faillock.so authsucc
+    insertbefore: auth.*required.*pam_deny.so
+    state: present
+  with_items:
+    - /etc/pam.d/password-auth
+    - /etc/pam.d/system-auth
+    
+- name: PAM password lockout - account required pam_faillock.so
+  lineinfile:
+    dest: "{{ item }}"
+    line: "account     required      pam_faillock.so"
+    regexp: account.*required.*pam_faillock.so
+    insertbefore: account.*required.*pam_unix.so
+    state: present
+  with_items:
+    - /etc/pam.d/password-auth
+    - /etc/pam.d/system-auth
+
+# CIS Benchmark 5.3.3 - Ensure password reuse is limited
+- name: PAM password reuse - password sufficient pam_unix.so remember=5
+  lineinfile:
+    dest: "{{ item }}"
+    line: "password    sufficient    pam_unix.so sha512 shadow nullok try_first_pass use_authtok remember=5"
+    regexp: password.*sufficient.*pam_unix\.so
+  with_items:
+    - /etc/pam.d/password-auth
+    - /etc/pam.d/system-auth
+
+# CIS Benchmark 5.4.1.4 - Ensure inactive password lock is 30 days or less
+- name: Ensure inactive password lock is 30 days or less
+  command: useradd -D -f 30
+
+# CIS Benchmark 5.4
+- name: set umask 027 to bashrc and profile
+  replace:
+    dest: "{{ item }}"
+    replace: "umask 027"
+    regexp: umask 0[0-9][0-6]
+  with_items:
+    - /etc/bashrc
+    - /etc/profile
+
+# CIS Benchmark 6.1.*
+- name: remove g/w read access to /etc/passwd-, /etc/group-
+  file: path="{{ item }}" mode="go-r" state=file
+  with_items:
+    - "/etc/passwd-"
+    - "/etc/group-"
+
+- name: set permissions of pip selfcheck.json
+  file:
+    path: /root/.cache/pip/selfcheck.json
+    state: file
+    mode: "go-w"
+
+# CIS Benchmark 6.2.8 - Ensure users' home directories permissions are 750 or more restrictive
+- name: Set all user directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: "g-w,o-rwx"
+  with_items:
+    - /opt/splunkforwarder
+
+# CIS Benchmark 1.3.*
+- name: install AIDE
+  yum: name="aide" state=latest
+
+- name: install AIDE configuration
+  copy:
+    src: files/config/aide.conf
+    dest: /etc/aide.conf
+
+- name: build AIDE database
+  command: "aide --init"
+
+- name: move AIDE database into place
+  command: "mv /etc/aide.db.new /etc/aide.db"
+
+- name: install aide validation cron job
+  cron:
+    name: "aide"
+    job: "/usr/sbin/aide --check"
+    hour: "0"
+    minute: "5"
+
+# CIS Benchmark 3.2.2
+- name: ensure ICMP redirects are not accepted (default)
+  sysctl:
+    name: net.ipv4.conf.default.accept_redirects
+    value: 0
+    state: present
+
+
+# CIS Benchmark 3.2.3
+- name: ensure secure ICMP redirects are not accepted (all)
+  sysctl:
+    name: net.ipv4.conf.all.secure_redirects
+    value: 0
+    state: present
+
+- name: ensure secure ICMP redirects are not accepted (default)
+  sysctl:
+    name: net.ipv4.conf.default.secure_redirects
+    value: 0
+    state: present
+
+
+# CIS Benchmark 2.2.2 (CISCAT report showing fonts, keep at end)
+- name: remove XWindows
+  yum: "name={{ item }} state=absent"
+  with_items:
+   - xorg-x11*
+   - xorg-x11-fonts-Type1
+   - xorg-x11-font-utils
+
+# Todo: Auditd configuration - need to see default configuration to implement
+
+# Unimplemented CIS Benchmark rules:
+# 1.4.2, 1.4.3 - Not relevant to cloud instances
+# 1.6.1.6 - Only unconfirmed daemon is trend. Implementing SELinux for that
+#           would require significant work.
+# 3.4.* - TCP Wrappers - is this a requirement given Seurity Groups?
+# 3.6.* - IPTables - is this a requirement given Security Groups?
+# 4.2.* - Logging - covered by Splunk configuration?
+# 5.3.* - PAM configuration - unsure if this will cause issues with AD auth.
+# 5.4.1.4 - Inactive password lock - unsure if this will cause issues for service accounts.
+# 6.2.8 - /opt/splunkforwarder is set as installed, so suggest not fixing this.
+...

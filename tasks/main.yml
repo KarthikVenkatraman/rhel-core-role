@@ -1,0 +1,24 @@
+---
+
+- include: rhel_7_3_kernel.yml
+- include: chrony_config.yml
+- include: sudo_env_keep_proxy.yml
+- include: localise.yml
+- include: prevent_password_expiry.yml
+- include: ssh_banner.yml
+- include: install_firewalld.yml
+- include: core_packages.yml
+- include: core_components.yml
+- include: configure_aws.yml
+- include: trend_agent.yml
+- include: ilmt_agent.yml
+- include: cloudwatch_metric_scripts.yml
+- include: splunk_forwarder.yml
+- include: active_directory_integration.yml
+- include: cis_hardening.yml
+- include: katello_agent.yml
+- include: cloudwatchlog_agent.yml
+- include: vault_secure_introduction.yml
+- include: audit_log.yml
+- include: logging.yml
+- include: securetty.yml

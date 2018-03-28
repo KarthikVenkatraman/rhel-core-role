@@ -1,0 +1,7 @@
+---
+
+- name: ensure sudo keeps proxy environment
+  lineinfile: 
+    dest: /etc/sudoers
+    line: Defaults    env_keep += "http_proxy https_proxy no_proxy"
+    insertafter: Defaults

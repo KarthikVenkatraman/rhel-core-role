@@ -1,0 +1,17 @@
+---
+
+rhel_core_epel_rpm: https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+rhel_core_trend_server: trend-dsm.management.aws-euw1-np.avivacloud.com
+rhel_core_trend_policy: 19
+rhel_core_trend_agent_url: https://trend-dsm.management.aws-euw1-np.avivacloud.com:443/software/agent/RedHat_EL7/x86_64/agent.rpm
+rhel_core_ilmt_agent_url: https://s3-eu-west-1.amazonaws.com/aviva-software/linux/ilmt/BESAgent-9.5.1.9-rhe5.x86_64.rpm
+rhel_core_ilmt_masthead_url: http://ip-10-64-8-165.eu-west-1.compute.internal:52311/masthead/masthead.afxm
+rhel_core_environment_configurator_gem_url: https://s3-eu-west-1.amazonaws.com/aviva-software/gems/environment_configurator-1.0.gem
+rhel_core_cloudwatch_scripts_url: http://aws-cloudwatch.s3.amazonaws.com/downloads/CloudWatchMonitoringScripts-1.2.1.zip
+rhel_core_splunkforwarder_url: https://s3-eu-west-1.amazonaws.com/aviva-software/linux/splunk/splunkforwarder-6.4.2-linux-2.6-x86_64.rpm
+rhel_core_splunk_configuration_url: https://s3-eu-west-1.amazonaws.com/aviva-software/linux/splunk/Splunk_addon.zip
+rhel_core_katello_rpm: http://fedorapeople.org/groups/katello/releases/yum/3.3/client/el7/x86_64/katello-client-repos-latest.rpm
+rhel_core_cloudwatchlog_agent_url: https://s3.amazonaws.com/aws-cloudwatch/downloads/latest/awslogs-agent-setup.py
+rhel_7_3_kernel_rpm: https://s3-eu-west-1.amazonaws.com/aviva-software/linux/meltdown/kernel-3.10.0-514.36.5.el7.x86_64.rpm
+rhel_7_3_kernel_tools_rpm: https://s3-eu-west-1.amazonaws.com/aviva-software/linux/meltdown/kernel-tools-3.10.0-514.36.5.el7.x86_64.rpm
+rhel_7_3_kernel_tools_libs_rpm: https://s3-eu-west-1.amazonaws.com/aviva-software/linux/meltdown/kernel-tools-libs-3.10.0-514.36.5.el7.x86_64.rpm

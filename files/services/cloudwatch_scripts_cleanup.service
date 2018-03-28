@@ -1,0 +1,10 @@
+[Unit]
+Description=Cleanup the files created by the Cloudwatch scripts
+After=cloud-init.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/rm -Rf /var/tmp/aws-mon
+
+[Install]
+WantedBy=multi-user.target

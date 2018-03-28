@@ -1,0 +1,14 @@
+---
+
+- name: create banner file
+  copy: 
+    src: files/config/ssh_banner 
+    dest: /etc/ssh/ssh_banner
+  
+- name: update sshd configuration
+  lineinfile: 
+    dest: /etc/ssh/sshd_config 
+    regexp: "^Banner" 
+    line: "Banner /etc/ssh/ssh_banner" 
+    insertafter: "^#Banner"
+  notify: restart sshd

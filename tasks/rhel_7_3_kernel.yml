@@ -1,0 +1,9 @@
+---
+
+- name:  install RHEL 7.3 kernel packages
+  yum: name={{ item }} state=present
+  when: ansible_distribution_version == "7.3"
+  with_items:
+    - "{{ rhel_7_3_kernel_rpm }}"
+    - "{{ rhel_7_3_kernel_tools_rpm }}"
+    - "{{ rhel_7_3_kernel_tools_libs_rpm }}"

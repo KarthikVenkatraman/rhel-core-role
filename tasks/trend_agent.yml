@@ -1,0 +1,40 @@
+---
+
+- name: ensure trend does not disable iptables
+  file:
+    path: /etc/use_dsa_with_iptables
+    state: touch
+
+- name: open firewall for remote activation
+  firewalld: zone=public port=4118/tcp permanent=true state=enabled
+
+- name: install trend agent
+  yum:
+    name: "{{ rhel_core_trend_agent_url }}"
+    state: present
+    validate_certs: no
+
+- name: install registration script
+  template:
+    src: ../templates/register_with_trend_dsm.j2
+    dest: /usr/local/sbin/register_with_trend_dsm
+    owner: root
+    group: root
+    mode: 0744
+
+- name: add the systemd service files
+  copy:
+    src: ../files/services/{{ item }}.service
+    dest: /etc/systemd/system/{{ item }}.service
+    owner: root
+    group: root
+    mode: 0644
+  with_items:
+    - trend_registration
+    - trend_deregistration
+
+- name: enable registration service
+  command: systemctl enable {{ item }}.service
+  with_items:
+    - trend_registration
+    - trend_deregistration

@@ -1,0 +1,11 @@
+[Unit]
+Description=Vault EC2 Secure Introduction
+After=setup_environment.service
+ConditionFileIsExecutable=/usr/local/sbin/vaultlogin.sh
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/vaultlogin.sh
+
+[Install]
+WantedBy=multi-user.target
