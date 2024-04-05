@@ -4,7 +4,11 @@
     "owner": "DSO"
   },
   "detail": {
-    "contributors": [],
+    "contributors": [
+      {
+        "name": "Karthik"
+      }
+    ],
     "diagrams": [
       {
         "title": "DataFlow Diagram",
@@ -12,6 +16,7 @@
         "diagramType": "STRIDE",
         "id": 0
       }
-    ]
+    ],
+    "reviewer": "Jan"
   }
 }
